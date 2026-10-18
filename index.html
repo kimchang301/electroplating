@@ -1,0 +1,545 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>龍門天車電鍍線</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: full-bleed 3D scene; floating control console on the right (desktop) or docked at the bottom (phone). Deliberately single dark "control room" look. */
+:root{
+  --bg:#14181c; --panel:#1d2329ee; --line:#323b44; --fg:#e4e8ea; --muted:#8e9aa4;
+  --g1:#e3a43c; --g2:#3fb7a6; --g3:#8f9ef0; --warn:#f0b54a; --bad:#ef6f61;
+  --display:"Chakra Petch","Noto Sans TC",system-ui,sans-serif;
+  --body:"Noto Sans TC",system-ui,-apple-system,"PingFang TC",sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);overflow:hidden}
+#scene{position:fixed;inset:0}
+#scene canvas{display:block;outline:none}
+.top{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:2px;pointer-events:none}
+.top h1{margin:0;font-family:var(--display);font-weight:600;font-size:20px;letter-spacing:.04em;text-wrap:balance}
+.top p{margin:0;color:var(--muted);font-size:12px}
+.console{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:calc(12px + env(safe-area-inset-top,0px));width:300px;max-height:calc(100% - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:14px;backdrop-filter:blur(6px)}
+.label{font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;font-family:var(--display)}
+.mode{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+button{font:inherit;color:var(--fg);background:#262e35;border:1px solid var(--line);border-radius:7px;padding:8px 10px;cursor:pointer;touch-action:manipulation}
+button:hover{background:#2e3740}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+button[aria-pressed="true"]{background:#e4e8ea;color:#14181c;border-color:#e4e8ea}
+.cranes{display:flex;flex-direction:column;gap:6px}
+.crane{display:grid;grid-template-columns:44px 1fr;gap:10px;align-items:center;text-align:left;padding:8px 10px}
+.crane .tag{font-family:var(--display);font-weight:600;font-size:16px;border-radius:5px;text-align:center;padding:4px 0;color:#14181c}
+.crane .info{display:flex;flex-direction:column;gap:1px;min-width:0}
+.crane .info b{font-weight:500;font-size:13px}
+.crane .info span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crane[aria-pressed="true"]{background:#2e3740;color:var(--fg);border-color:var(--sel,var(--fg));box-shadow:inset 0 0 0 1px var(--sel,var(--fg))}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pad button{padding:10px 0;font-size:14px}
+.pad .wide{grid-column:span 3;font-weight:500}
+.keys{font-size:12px;color:var(--muted);line-height:1.6}
+kbd{font-family:var(--display);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--fg)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#2a2420;border:1px solid var(--warn);color:var(--warn);padding:8px 14px;border-radius:7px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.show{opacity:1}
+.dr{display:flex;flex-direction:column;gap:6px}
+.drrow{display:grid;grid-template-columns:34px minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:stretch}
+.drrow .tag{font-family:var(--display);font-weight:600;font-size:13px;border-radius:5px;color:#14181c;display:flex;align-items:center;justify-content:center}
+.motor{background:#232a30;border:1px solid var(--line);border-radius:7px;padding:5px 7px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.motor.hot{border-color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad)}
+.mtop{display:flex;justify-content:space-between;align-items:baseline;gap:4px;font-size:11px;color:var(--muted);white-space:nowrap}
+.mtop .run{width:7px;height:7px;border-radius:50%;background:var(--line);display:inline-block;margin-right:4px;vertical-align:1px}
+.mtop .run.on{background:var(--g2);box-shadow:0 0 6px var(--g2)}
+.mval{font-family:var(--display);font-variant-numeric:tabular-nums;font-size:16px;display:flex;align-items:baseline;gap:5px;white-space:nowrap}
+.mval small{font-size:10px;font-family:var(--body);color:var(--muted)}
+.motor.hot .mval small{color:var(--bad)}
+.motor canvas{width:100%;height:22px;display:block}
+.drnote{font-size:11px;color:var(--muted);line-height:1.5}
+.counter{font-family:var(--display);font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted)}
+.manual-only[hidden]{display:none!important}
+.vib{position:fixed;left:max(16px,env(safe-area-inset-left,0px));right:calc(332px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.vcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0;cursor:pointer;text-align:left;color:var(--fg)}
+.vcard[aria-pressed="true"]{border-color:var(--rc);box-shadow:inset 0 0 0 1px var(--rc)}
+.vhead{display:flex;align-items:baseline;gap:8px;min-width:0}
+.vhead .dot{width:9px;height:9px;border-radius:50%;background:var(--rc);flex:none;align-self:center}
+.vhead b{font-family:var(--display);font-weight:600;font-size:14px}
+.vhead .where{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.vhead .rms{font-family:var(--display);font-variant-numeric:tabular-nums;font-size:15px;white-space:nowrap}
+.vhead .rms small{font-size:11px;color:var(--muted);margin-left:2px}
+.vcard canvas{width:100%;height:78px;display:block}
+.vfoot{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+@media (max-width:900px) and (min-width:641px){.vib{grid-template-columns:1fr;right:auto;width:260px}.vcard canvas{height:48px}}
+@media (max-width:640px){
+  .console{top:auto;bottom:calc(8px + env(safe-area-inset-bottom,0px));left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));width:auto;max-height:52%;padding:10px;gap:10px}
+  .cranes{flex-direction:row}
+  .crane{grid-template-columns:1fr;flex:1;gap:4px;padding:6px}
+  .crane .info span{display:none}
+  .keys{display:none}
+  .toast{bottom:auto;top:calc(70px + env(safe-area-inset-top,0px))}
+  .console{max-height:44%}
+  .vib{top:calc(62px + env(safe-area-inset-top,0px));bottom:auto;right:max(16px,env(safe-area-inset-right,0px));gap:6px}
+  .vcard{padding:7px 8px;gap:4px}
+  .vhead{flex-wrap:wrap;gap:4px 6px}.vhead .where{display:none}
+  .vhead .rms{font-size:13px;width:100%}
+  .vcard canvas{height:40px}.vfoot{display:none}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+
+<div id="scene"></div>
+<div class="top">
+  <h1>龍門天車電鍍線</h1>
+  <p>15 槽 · 3 台天車 · 3 掛架　拖曳旋轉、滾輪縮放</p>
+</div>
+
+<aside class="console" aria-label="操作面板">
+  <div>
+    <div class="label">模式</div>
+    <div class="mode" style="margin-top:6px">
+      <button id="mManual" aria-pressed="true">手動操作</button>
+      <button id="mAuto" aria-pressed="false">自動運轉</button>
+    </div>
+  </div>
+  <div>
+    <div class="label">天車（點選切換）</div>
+    <div class="cranes" id="cranes" style="margin-top:6px"></div>
+  </div>
+  <div class="manual-only" id="padWrap">
+    <div class="label">控制</div>
+    <div class="pad" style="margin-top:6px">
+      <button id="bLeft" aria-label="左移一槽">◀ 左移</button>
+      <button id="bUp" aria-label="上升">▲ 上升</button>
+      <button id="bRight" aria-label="右移一槽">右移 ▶</button>
+      <button id="bDown" aria-label="下降" style="grid-column:2">▼ 下降</button>
+      <button id="bGrab" class="wide">夾取 / 放下</button>
+    </div>
+  </div>
+  <div class="keys manual-only" id="keys">
+    <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 選天車　<kbd>←</kbd><kbd>→</kbd> 移動<br>
+    <kbd>↑</kbd><kbd>↓</kbd> 升降　<kbd>Space</kbd> 夾取 / 放下
+  </div>
+  <div>
+    <div class="label">馬達 Decay rate（每次動作量測）</div>
+    <div class="dr" id="dr" style="margin-top:6px"></div>
+    <div class="drnote" style="margin-top:6px">比值為與另外兩台同類馬達平均相比；≥ 1.5× 以紅框標示。</div>
+  </div>
+  <div class="counter" id="counter">已完成掛架：0</div>
+  <button id="bReset">重置</button>
+</aside>
+<section class="vib" id="vib" aria-label="掛架振動（智慧貼紙）"></section>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const N=15, PITCH=1.25;
+const TX=t=>(t-(N-1)/2)*PITCH;
+const RIM=1.4, BAR_DOWN=1.5, BAR_UP=2.85, BEAM_Y=3.7, RAIL_Y=1.8, RAIL_Z=1.18;
+const TANKS=[['上料','load'],['脫脂','clean'],['水洗','rinse'],['微蝕','etch'],['水洗','rinse'],['酸浸','acid'],['鍍銅','cu'],['鍍銅','cu'],['鍍銅','cu'],['水洗','rinse'],['酸浸','acid'],['鍍錫','sn'],['水洗','rinse'],['熱水洗','rinse'],['下料','load']];
+const LIQ={clean:0xc9b26a,rinse:0x6fa8c9,etch:0xb46a5a,acid:0x9fc47a,cu:0x2a72c4,sn:0x9d978e};
+const DWELL={cu:5,sn:4,load:1.5};
+const GCOL=[0xe3a43c,0x3fb7a6,0x8f9ef0], GCSS=['--g1','--g2','--g3'];
+const REACH=[[0,5],[5,10],[10,14]], HOME=[2,7,12];
+// 各槽震動馬達的振動強度（g RMS），可依實測調整
+const VAMP={cu:0.95,sn:0.8,etch:0.5,acid:0.45,clean:0.5,rinse:0.32,load:0.18};
+const RCOL=['#ef7fa3','#62c3f0','#b6d36a'], RHEX=[0xef7fa3,0x62c3f0,0xb6d36a];
+const VHZ=20, VLEN=30*VHZ, VMAX=1.6;
+
+// ---------- scene ----------
+const host=document.getElementById('scene');
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+host.appendChild(renderer.domElement);
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x14181c);
+scene.fog=new THREE.Fog(0x14181c,30,60);
+const camera=new THREE.PerspectiveCamera(40,1,0.1,200);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.target.set(0,1.6,0); controls.enableDamping=true; controls.maxPolarAngle=Math.PI*0.49;
+controls.minDistance=4; controls.maxDistance=45;
+
+scene.add(new THREE.HemisphereLight(0xdfe8f0,0x2a2620,0.65));
+const sun=new THREE.DirectionalLight(0xffffff,0.85); sun.position.set(-6,14,9); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048); Object.assign(sun.shadow.camera,{left:-14,right:14,top:8,bottom:-8,near:1,far:40});
+scene.add(sun);
+
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(80,40),new THREE.MeshStandardMaterial({color:0x22282d,roughness:.95}));
+floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
+const grid=new THREE.GridHelper(40,32,0x313a42,0x2a3238); grid.position.y=0.002; scene.add(grid);
+
+const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.6,metalness:.1},o));
+function box(w,h,d,mat,x=0,y=0,z=0,parent=scene){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
+
+function labelTex(lines,w=256,h=128,bg='#e9ecee',fg='#1b2026'){
+  const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
+  g.fillStyle=bg;g.fillRect(0,0,w,h);g.fillStyle=fg;g.textAlign='center';g.textBaseline='middle';
+  g.font='600 44px "Chakra Petch", sans-serif';g.fillText(lines[0],w/2,h*0.32);
+  g.font='500 38px "Noto Sans TC", sans-serif';g.fillText(lines[1],w/2,h*0.72);
+  const t=new THREE.CanvasTexture(c);t.anisotropy=4;return t;
+}
+
+// tanks
+const tankMat=M(0x5d6b78,{roughness:.8}), rimMat=M(0x7d8b97,{roughness:.5});
+const labelMeshes=[];
+TANKS.forEach(([name,type],t)=>{
+  const g=new THREE.Group(); g.position.x=TX(t); scene.add(g);
+  const W=1.06,D=1.8,H=RIM,wl=0.05;
+  box(W,0.05,D,tankMat,0,0.025,0,g);
+  box(wl,H,D,tankMat,-W/2+wl/2,H/2,0,g); box(wl,H,D,tankMat,W/2-wl/2,H/2,0,g);
+  box(W,H,wl,tankMat,0,H/2,-D/2+wl/2,g); box(W,H,wl,tankMat,0,H/2,D/2-wl/2,g);
+  box(W+0.04,0.05,0.08,rimMat,0,H,D/2,g); box(W+0.04,0.05,0.08,rimMat,0,H,-D/2,g);
+  if(type!=='load'){
+    const liq=new THREE.Mesh(new THREE.BoxGeometry(W-0.1,1.15,D-0.1),new THREE.MeshStandardMaterial({color:LIQ[type],transparent:true,opacity:.55,roughness:.15,metalness:.05}));
+    liq.position.y=0.05+1.15/2; g.add(liq);
+  }
+  const lbl=new THREE.Mesh(new THREE.PlaneGeometry(0.9,0.45),new THREE.MeshBasicMaterial({map:labelTex([String(t+1).padStart(2,'0'),name])}));
+  lbl.position.set(0,0.72,D/2+0.006); g.add(lbl); labelMeshes.push(lbl);
+});
+// rails + pillars
+const steel=M(0x4a535b,{metalness:.5,roughness:.45});
+const railLen=N*PITCH+1.2;
+[-RAIL_Z,RAIL_Z].forEach(z=>{
+  box(railLen,0.12,0.14,steel,0,RAIL_Y,z);
+  box(railLen,0.03,0.06,M(0x9aa5ae,{metalness:.8,roughness:.3}),0,RAIL_Y+0.075,z);
+  for(let i=0;i<=8;i++){box(0.12,RAIL_Y,0.12,steel,-railLen/2+0.2+i*(railLen-0.4)/8,RAIL_Y/2,z)}
+});
+// zone floor stripes
+REACH.forEach((r,i)=>{
+  const a=TX(i*5)-PITCH/2,b=TX(i*5+4)+PITCH/2;
+  const s=new THREE.Mesh(new THREE.PlaneGeometry(b-a-0.08,0.12),new THREE.MeshBasicMaterial({color:GCOL[i]}));
+  s.rotation.x=-Math.PI/2;s.position.set((a+b)/2,0.004,1.55);scene.add(s);
+});
+
+// ---------- gantries ----------
+const gantries=[0,1,2].map(i=>{
+  const grp=new THREE.Group(); scene.add(grp);
+  const paint=M(GCOL[i],{roughness:.45,metalness:.2,emissive:GCOL[i],emissiveIntensity:0});
+  const dark=M(0x2b3238,{metalness:.4,roughness:.5});
+  [-RAIL_Z,RAIL_Z].forEach(z=>{
+    box(0.8,0.16,0.22,dark,0,RAIL_Y+0.17,z,grp);              // end truck
+    box(0.12,BEAM_Y-RAIL_Y-0.2,0.12,paint,-0.28,(BEAM_Y+RAIL_Y)/2,z,grp);
+    box(0.12,BEAM_Y-RAIL_Y-0.2,0.12,paint, 0.28,(BEAM_Y+RAIL_Y)/2,z,grp);
+  });
+  box(0.7,0.22,2*RAIL_Z+0.2,paint,0,BEAM_Y,0,grp);             // cross beam
+  const hmMat=M(0x2b3238,{metalness:.4,roughness:.5,emissive:0x3fb7a6,emissiveIntensity:0});
+  box(0.5,0.3,0.6,hmMat,0,BEAM_Y+0.26,0,grp);                    // hoist motor
+  const tmMat=M(0x2b3238,{metalness:.4,roughness:.5,emissive:0x3fb7a6,emissiveIntensity:0});
+  box(0.22,0.2,0.2,tmMat,0.18,RAIL_Y+0.36,RAIL_Z+0.02,grp);       // travel motor
+  const cyl=new THREE.CylinderGeometry(0.012,0.012,1,6);
+  const cables=[-0.6,0.6].map(z=>{const c=new THREE.Mesh(cyl,M(0x222222,{metalness:.6}));c.position.z=z;grp.add(c);return c});
+  const hook=new THREE.Group(); grp.add(hook);
+  box(0.14,0.08,1.5,dark,0,0.1,0,hook);
+  [-0.68,0.68].forEach(z=>box(0.18,0.16,0.06,paint,0,0.02,z,hook));
+  const tagTex=labelTex(['G'+(i+1),'天車'],128,128,'#'+GCOL[i].toString(16).padStart(6,'0'),'#14181c');
+  const tag=new THREE.Mesh(new THREE.PlaneGeometry(0.42,0.42),new THREE.MeshBasicMaterial({map:tagTex}));
+  tag.position.set(0,BEAM_Y,RAIL_Z+0.111); grp.add(tag);
+  return {i,grp,paint,hook,cables,hmMat,tmMat,x:HOME[i],hy:BAR_UP,moveTo:null,q:[],step:null,carry:null,status:'待命',wait:0};
+});
+
+// ---------- racks ----------
+const PANEL_BASE=new THREE.Color(0x9a6a3e), CU=new THREE.Color(0xe08a52), SN=new THREE.Color(0xc8ccd0);
+const racks=[0,1,2].map(k=>{
+  const grp=new THREE.Group(); scene.add(grp);
+  const ss=M(0xb9c1c7,{metalness:.8,roughness:.3});
+  box(0.08,0.08,1.95,ss,0,0,0,grp);                                  // flight bar
+  [-0.92,0.92].forEach(z=>box(0.1,0.06,0.1,ss,0,-0.05,z,grp));       // saddles
+  const pmat=new THREE.MeshStandardMaterial({color:PANEL_BASE.clone(),metalness:.55,roughness:.35});
+  [-0.55,0,0.55].forEach(z=>{
+    box(0.02,0.1,0.04,ss,0,-0.09,z-0.15,grp); box(0.02,0.1,0.04,ss,0,-0.09,z+0.15,grp);
+    box(0.025,0.9,0.46,pmat,0,-0.6,z,grp);                            // PCB panel
+  });
+  // smart tag on the flight bar
+  const tag=box(0.12,0.05,0.2,M(0x1a1f24,{roughness:.4}),0,0.065,0.35,grp);
+  const ledMat=new THREE.MeshStandardMaterial({color:RHEX[k],emissive:RHEX[k],emissiveIntensity:0.2});
+  box(0.125,0.012,0.12,ledMat,0,0.096,0.35,grp);
+  const tl=new THREE.Mesh(new THREE.PlaneGeometry(0.3,0.3),new THREE.MeshBasicMaterial({map:labelTex(['R'+(k+1),'貼紙'],128,128,RCOL[k],'#14181c'),side:THREE.DoubleSide}));
+  tl.position.set(0,0.3,0.35); tl.rotation.y=Math.PI/2*0; grp.add(tl);
+  return {k,grp,pmat,ledMat,tag:tl,tank:null,since:0,cu:0,sn:false,reserved:null,scale:1,
+    vbuf:new Float32Array(VLEN),vtank:new Int8Array(VLEN).fill(-1),vi:0,vacc:0,vnow:0,seatT:0,impact:0,peak:0,lastTank:-1};
+});
+const tankOcc=t=>racks.find(r=>r.tank===t);
+let reservedTanks=new Set();
+
+let auto=false, done=0, clock=0, unloadQ=[];
+// ---------- motor decay rate ----------
+// 基準值：G1 走行馬達刻意設為另外兩台的 2 倍
+const DR_BASE={travel:[16.8,8.4,8.4],hoist:[6.0,5.8,6.2]}, DR_N=24, DR_MAX=20;
+const dr=gantries.map(g=>({travel:[],hoist:[]}));
+function gn(){let u=0;for(let i=0;i<4;i++)u+=Math.random();return (u-2)*0.87}
+function measure(g,m){const a=dr[g.i][m];a.push(Math.max(0.02,DR_BASE[m][g.i]*(1+0.05*gn())));if(a.length>DR_N)a.shift()}
+function seedDR(){dr.forEach((d,i)=>['travel','hoist'].forEach(m=>{d[m].length=0;for(let k=0;k<12;k++)d[m].push(DR_BASE[m][i]*(1+0.05*gn()))}))}
+function reset(){
+  seedDR();
+  [0,3,7].forEach((t,k)=>{const r=racks[k];r.tank=t;r.since=0;r.cu=0;r.sn=false;r.reserved=null;r.grp.visible=true;r.scale=1});
+  gantries.forEach(g=>{g.x=HOME[g.i];g.hy=BAR_UP;g.moveTo=null;g.q=[];g.step=null;g.carry=null;g.status='待命'});
+  racks.forEach(r=>{r.vbuf.fill(0);r.vtank.fill(-1);r.vi=0;r.vnow=0;r.seatT=0;r.impact=0.9;r.peak=0});
+  reservedTanks.clear(); unloadQ=[]; done=0; clock=0; updateCounter();
+}
+
+// ---------- motion rules ----------
+function blocked(g,t){
+  const L=gantries[g.i-1], R=gantries[g.i+1];
+  if(L){const lm=Math.max(L.x,L.moveTo??L.x); if(t-lm<0.999) return true}
+  if(R){const rm=Math.min(R.x,R.moveTo??R.x); if(rm-t<0.999) return true}
+  return false;
+}
+const inReach=(g,t)=>t>=REACH[g.i][0]&&t<=REACH[g.i][1];
+const atTank=g=>Math.abs(g.x-Math.round(g.x))<1e-3?Math.round(g.x):null;
+
+function tickGantry(g,dt){
+  if(!g.step&&g.q.length) g.step=g.q.shift();
+  const s=g.step; if(!s){g.status=g.carry?'載運中':'待命';return}
+  const t=atTank(g);
+  switch(s.type){
+    case 'move':{
+      if(g.moveTo===null){
+        if(blocked(g,s.t)){g.status='等待鄰車讓位';return}
+        g.moveTo=s.t;
+      }
+      g.status='移動至 '+(s.t+1)+' 槽';
+      const d=g.moveTo-g.x, v=1.7*dt;
+      if(Math.abs(d)<=v){g.x=g.moveTo;g.moveTo=null;g.step=null;measure(g,'travel')}else g.x+=Math.sign(d)*v;
+      break;}
+    case 'lower': case 'raise':{
+      const target=s.type==='lower'?BAR_DOWN:BAR_UP; g.status=s.type==='lower'?'下降':'上升';
+      const d=target-g.hy, v=1.0*dt;
+      if(Math.abs(d)<=v){g.hy=target;g.step=null;measure(g,'hoist')}else g.hy+=Math.sign(d)*v;
+      break;}
+    case 'grab':{
+      const r=tankOcc(t); g.step=null;
+      if(r&&!g.carry){r.tank=null;g.carry=r;}
+      break;}
+    case 'release':{
+      g.step=null;
+      if(g.carry&&!tankOcc(t)){const r=g.carry;r.tank=t;r.since=clock;r.reserved=null;r.seatT=0;r.impact=0.9;g.carry=null;reservedTanks.delete(t);
+        const ty=TANKS[t][1]; if(ty==='cu')r.cu=Math.min(3,r.cu+1); if(ty==='sn')r.sn=true;}
+      break;}
+    case 'wait':{g.status='滴液';s.left=(s.left??s.s)-dt;if(s.left<=0)g.step=null;break;}
+  }
+}
+
+// ---------- auto scheduler ----------
+function schedule(g){
+  if(g.step||g.q.length) return;
+  if(g.carry){ // drop wherever possible
+    const cands=[];for(let t=REACH[g.i][0];t<=REACH[g.i][1];t++) if(!tankOcc(t)&&!reservedTanks.has(t)) cands.push(t);
+    if(!cands.length) return;
+    cands.sort((a,b)=>Math.abs(a-g.x)-Math.abs(b-g.x)); const t=cands[0]; reservedTanks.add(t);
+    g.q.push({type:'move',t},{type:'lower'},{type:'release'},{type:'raise'}); return;
+  }
+  if(g.hy<BAR_UP-1e-3){g.q.push({type:'raise'});return}
+  const [a,b]=REACH[g.i];
+  for(let t=b-1;t>=a;t--){
+    const r=tankOcc(t); if(!r||r.reserved!==null) continue;
+    const need=DWELL[TANKS[t][1]]??1.5; if(clock-r.since<need) continue;
+    const n=t+1; if(n>b||tankOcc(n)||reservedTanks.has(n)) continue;
+    r.reserved=g.i; reservedTanks.add(n);
+    g.q.push({type:'move',t},{type:'lower'},{type:'grab'},{type:'raise'},{type:'wait',s:0.6},{type:'move',t:n},{type:'lower'},{type:'release'},{type:'raise'});
+    return;
+  }
+  if(Math.abs(g.x-HOME[g.i])>1e-3) g.q.push({type:'move',t:HOME[g.i]});
+}
+function autoUnload(){
+  const r=tankOcc(N-1);
+  if(r&&r.reserved===null&&clock-r.since>2.0){r.tank=null;r.grp.visible=false;unloadQ.push(r);done++;updateCounter();toast('掛架 '+(r.k+1)+' 已下料，回到上料槽');}
+  if(unloadQ.length&&!tankOcc(0)&&!reservedTanks.has(0)&&!gantries[0].carry){
+    const z=unloadQ.shift();z.tank=0;z.since=clock;z.seatT=0;z.impact=0.5;z.cu=0;z.sn=false;z.grp.visible=true;z.scale=0.01;
+  }
+}
+
+// ---------- manual commands ----------
+let sel=0;
+function manual(cmd){
+  if(auto){toast('自動運轉中，請先切回手動');return}
+  const g=gantries[sel];
+  if(g.step||g.q.length){toast('G'+(sel+1)+' 動作中，請稍候');return}
+  const t=atTank(g);
+  if(cmd==='left'||cmd==='right'){
+    if(g.hy<BAR_UP-1e-3){toast('請先將吊具升到頂再移動');return}
+    const n=t+(cmd==='left'?-1:1);
+    if(!inReach(g,n)){toast('G'+(sel+1)+' 的行程範圍是 '+(REACH[sel][0]+1)+'–'+(REACH[sel][1]+1)+' 槽');return}
+    if(blocked(g,n)){toast('前方有天車，無法再靠近');return}
+    g.q.push({type:'move',t:n});
+  }else if(cmd==='up'){ if(g.hy<BAR_UP-1e-3) g.q.push({type:'raise'}); }
+  else if(cmd==='down'){
+    if(g.hy>BAR_DOWN+1e-3){
+      if(g.carry&&tankOcc(t)){toast((t+1)+' 槽已有掛架，不能放下');return}
+      g.q.push({type:'lower'});
+    }
+  }else if(cmd==='grab'){
+    if(g.hy>BAR_DOWN+1e-3){toast('請先下降到槽內再夾取或放下');return}
+    if(g.carry){ if(tankOcc(t)){toast('此槽已有掛架');return} g.q.push({type:'release'}) }
+    else { if(!tankOcc(t)){toast((t+1)+' 槽沒有掛架可夾');return} g.q.push({type:'grab'}) }
+  }
+}
+
+// ---------- UI ----------
+const cranesEl=document.getElementById('cranes');
+const craneBtns=gantries.map(g=>{
+  const b=document.createElement('button');b.className='crane';b.id='crane'+g.i;
+  const col=getComputedStyle(document.documentElement).getPropertyValue(GCSS[g.i]);
+  b.style.setProperty('--sel',col);
+  b.innerHTML='<div class="tag" style="background:'+col+'">G'+(g.i+1)+'</div><div class="info"><b></b><span></span></div>';
+  b.onclick=()=>select(g.i); cranesEl.appendChild(b); return b;
+});
+function select(i){sel=i;craneBtns.forEach((b,k)=>b.setAttribute('aria-pressed',k===i?'true':'false'))}
+select(0);
+const drEl=document.getElementById('dr');
+const drUI=gantries.map(g=>{
+  const row=document.createElement('div');row.className='drrow';
+  const col=getComputedStyle(document.documentElement).getPropertyValue(GCSS[g.i]);
+  row.innerHTML='<div class="tag" style="background:'+col+'">G'+(g.i+1)+'</div>'+
+   ['travel','hoist'].map(m=>'<div class="motor" data-m="'+m+'"><div class="mtop"><span><i class="run"></i>'+(m==='travel'?'走行':'升降')+'</span><span class="rt"></span></div><div class="mval"><span class="v"></span><small></small></div><canvas></canvas></div>').join('');
+  drEl.appendChild(row);
+  const o={};row.querySelectorAll('.motor').forEach(el=>o[el.dataset.m]={el,run:el.querySelector('.run'),v:el.querySelector('.v'),tag:el.querySelector('small'),rt:el.querySelector('.rt'),cv:el.querySelector('canvas')});
+  return o;
+});
+const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+function drawSpark(cv,arr,color,ref){
+  const dpr=Math.min(devicePixelRatio,2),W=cv.clientWidth,H=cv.clientHeight;if(!W||!H)return;
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr)}
+  const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);
+  const X=i=>2+(W-6)*i/(DR_N-1),Y=v=>H-2-(Math.min(v,DR_MAX)/DR_MAX)*(H-4);
+  g.setLineDash([2,3]);g.strokeStyle=C_MUTED;g.globalAlpha=.6;g.beginPath();g.moveTo(0,Y(ref));g.lineTo(W,Y(ref));g.stroke();g.setLineDash([]);g.globalAlpha=1;
+  const off=DR_N-arr.length;g.beginPath();arr.forEach((v,i)=>{i?g.lineTo(X(i+off),Y(v)):g.moveTo(X(i+off),Y(v))});
+  g.strokeStyle=color;g.lineWidth=1.4;g.stroke();
+  const lv=arr[arr.length-1];g.beginPath();g.arc(X(DR_N-1),Y(lv),2.4,0,7);g.fillStyle=color;g.fill();
+}
+let drFrame=0;
+function refreshDR(){
+  const BAD=cssv('--bad'),FG=cssv('--fg');
+  gantries.forEach((g,i)=>['travel','hoist'].forEach(m=>{
+    const u=drUI[i][m],a=dr[i][m],cur=avg(a.slice(-5));
+    const others=gantries.filter(h=>h.i!==i).map(h=>avg(dr[h.i][m].slice(-5))),ref=avg(others),ratio=cur/ref;
+    const running=g.step&&(m==='travel'?g.step.type==='move'&&g.moveTo!==null:(g.step.type==='lower'||g.step.type==='raise'));
+    u.run.classList.toggle('on',!!running);
+    u.v.textContent=cur.toFixed(1);u.rt.textContent=ratio.toFixed(1)+'×';
+    const hot=ratio>=1.5;u.el.classList.toggle('hot',hot);u.tag.textContent=hot?'偏高':'';
+    const mat=m==='travel'?g.tmMat:g.hmMat;
+    mat.emissive.set(hot?0xef6f61:0x3fb7a6);mat.emissiveIntensity=running?0.5+0.4*Math.sin(clock*12):(hot?0.25:0);
+    if(drFrame%6===0)drawSpark(u.cv,a,hot?BAD:FG,ref);
+  }));
+  drFrame++;
+}
+function refreshUI(){
+  refreshDR();
+  gantries.forEach((g,k)=>{
+    const b=craneBtns[k]; const t=Math.round(g.x);
+    b.querySelector('b').textContent=(t+1)+' 槽 · '+TANKS[t][0];
+    b.querySelector('span').textContent=g.status+(g.carry?' · 掛架 '+(g.carry.k+1):'');
+    g.paint.emissiveIntensity=(!auto&&k===sel)?0.35:0;
+  });
+}
+const counterEl=document.getElementById('counter');
+function updateCounter(){counterEl.textContent='已完成掛架：'+done}
+let toastTimer; const toastEl=document.getElementById('toast');
+function toast(m){toastEl.textContent=m;toastEl.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastEl.classList.remove('show'),1800)}
+function setAuto(on){
+  auto=on;document.getElementById('mAuto').setAttribute('aria-pressed',on);document.getElementById('mManual').setAttribute('aria-pressed',!on);
+  document.querySelectorAll('.manual-only').forEach(e=>e.hidden=on);
+  if(!on){gantries.forEach(g=>{/* let current queue finish */});racks.forEach(r=>{if(r.tank!==null)r.reserved=null})}
+}
+document.getElementById('mAuto').onclick=()=>setAuto(true);
+document.getElementById('mManual').onclick=()=>{setAuto(false);toast('自動排程停止，進行中的動作會先做完')};
+document.getElementById('bReset').onclick=()=>{reset();toast('已重置')};
+[['bLeft','left'],['bRight','right'],['bUp','up'],['bDown','down'],['bGrab','grab']].forEach(([id,c])=>document.getElementById(id).onclick=()=>manual(c));
+addEventListener('keydown',e=>{
+  const k=e.key;
+  if(k==='1'||k==='2'||k==='3'){select(+k-1);return}
+  const map={ArrowLeft:'left',a:'left',A:'left',ArrowRight:'right',d:'right',D:'right',ArrowUp:'up',w:'up',W:'up',ArrowDown:'down',s:'down',S:'down',' ':'grab'};
+  if(map[k]){e.preventDefault();manual(map[k])}
+});
+
+// ---------- vibration (smart tag) ----------
+const vibEl=document.getElementById('vib'); let rsel=-1;
+const vcards=racks.map(r=>{
+  const b=document.createElement('button');b.className='vcard';b.id='vcard'+r.k;b.style.setProperty('--rc',RCOL[r.k]);b.setAttribute('aria-pressed','false');
+  b.innerHTML='<div class="vhead"><span class="dot"></span><b>掛架 R'+(r.k+1)+'</b><span class="where"></span><span class="rms">0.00<small>g</small></span></div><canvas></canvas><div class="vfoot"><span>−30 s</span><span class="pk"></span><span>現在</span></div>';
+  b.onclick=()=>{rsel=rsel===r.k?-1:r.k;vcards.forEach((c,i)=>c.el.setAttribute('aria-pressed',i===rsel?'true':'false'))};
+  vibEl.appendChild(b);
+  return {el:b,cv:b.querySelector('canvas'),where:b.querySelector('.where'),rms:b.querySelector('.rms'),pk:b.querySelector('.pk')};
+});
+const gauss=()=>{let u=0;for(let i=0;i<4;i++)u+=Math.random();return (u-2)*0.87};
+function tickVib(r,dt,carried){
+  const seated=r.tank!==null&&!carried&&r.grp.visible;
+  let v;
+  if(seated){
+    r.seatT+=dt; const A=VAMP[TANKS[r.tank][1]];
+    const ramp=Math.min(1,r.seatT/0.8);                       // 馬達耦合建立
+    v=A*ramp*(1+0.1*gauss()+0.06*Math.sin(clock*1.7+r.k))+r.impact;
+  }else{ v=0.006+0.004*Math.abs(gauss()); }               // 空中：僅感測器雜訊
+  r.impact*=Math.exp(-dt*7);
+  r.vnow+=(v-r.vnow)*Math.min(1,dt*12);
+  r.vacc+=dt;
+  while(r.vacc>=1/VHZ){r.vacc-=1/VHZ;r.vbuf[r.vi]=r.vnow;r.vtank[r.vi]=seated?r.tank:-1;r.vi=(r.vi+1)%VLEN}
+  let pk=0;for(let i=0;i<VLEN;i++)if(r.vbuf[i]>pk)pk=r.vbuf[i]; r.peak=pk;
+  return seated;
+}
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C_LINE=cssv('--line'),C_MUTED=cssv('--muted');
+const hex=n=>'#'+n.toString(16).padStart(6,'0');
+function drawVib(r){
+  const c=vcards[r.k], cv=c.cv, dpr=Math.min(devicePixelRatio,2);
+  const W=cv.clientWidth, H=cv.clientHeight; if(!W||!H) return;
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr)}
+  const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,H);
+  const strip=5, ch=H-strip-3, L=0, X=i=>L+(W-L)*i/(VLEN-1), Y=v=>ch-(Math.min(v,VMAX)/VMAX)*(ch-2);
+  g.strokeStyle=C_LINE; g.lineWidth=1; g.fillStyle=C_MUTED; g.font='10px "Chakra Petch",sans-serif'; g.textBaseline='bottom';
+  [0.5,1.0,1.5].forEach(v=>{const y=Math.round(Y(v))+0.5;g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke();if(H>50)g.fillText(v.toFixed(1),2,y-1)});
+  // tank strip
+  for(let i=0;i<VLEN;i++){const t=r.vtank[(r.vi+i)%VLEN];if(t<0)continue;const ty=TANKS[t][1];
+    g.fillStyle=ty==='load'?'#6b7680':hex(LIQ[ty]);g.fillRect(X(i),H-strip,(W-L)/VLEN+0.6,strip)}
+  // area + line
+  g.beginPath();g.moveTo(X(0),ch);
+  for(let i=0;i<VLEN;i++)g.lineTo(X(i),Y(r.vbuf[(r.vi+i)%VLEN]));
+  g.lineTo(X(VLEN-1),ch);g.closePath();g.globalAlpha=0.18;g.fillStyle=RCOL[r.k];g.fill();g.globalAlpha=1;
+  g.beginPath();for(let i=0;i<VLEN;i++){const y=Y(r.vbuf[(r.vi+i)%VLEN]);i?g.lineTo(X(i),y):g.moveTo(X(i),y)}
+  g.strokeStyle=RCOL[r.k];g.lineWidth=1.5;g.stroke();
+  const ey=Y(r.vbuf[(r.vi+VLEN-1)%VLEN]);g.beginPath();g.arc(X(VLEN-1)-2,ey,2.5,0,7);g.fillStyle=RCOL[r.k];g.fill();
+}
+function vibUI(r,seated,carrier){
+  const c=vcards[r.k];
+  c.rms.innerHTML=r.vnow.toFixed(2)+'<small>g RMS</small>';
+  c.where.textContent=!r.grp.visible?'下料後排隊中':carrier?'由 G'+(carrier.i+1)+' 吊運中':(r.tank+1)+' 槽 '+TANKS[r.tank][0]+(seated?' · 振動中':'');
+  c.pk.textContent='30 s 峰值 '+r.peak.toFixed(2)+' g';
+  drawVib(r);
+}
+
+// ---------- loop ----------
+function resize(){
+  const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();
+}
+addEventListener('resize',resize);resize();
+const far=camera.aspect<1?2.1:1;
+camera.position.set(5*far,9*far,17*far); controls.update();
+
+reset();
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;clock+=dt;
+  if(auto){gantries.forEach(schedule);autoUnload()}
+  gantries.forEach(g=>tickGantry(g,dt));
+  gantries.forEach(g=>{
+    g.grp.position.x=TX(g.x);
+    g.hook.position.y=g.hy+0.04;
+    const top=BEAM_Y-0.11, bot=g.hy+0.14, len=top-bot;
+    g.cables.forEach(c=>{c.scale.y=len;c.position.y=bot+len/2});
+  });
+  racks.forEach(r=>{
+    const g=gantries.find(g=>g.carry===r);
+    const seated=tickVib(r,dt,!!g);
+    if(g){r.grp.position.set(TX(g.x),g.hy,0)}
+    else if(r.tank!==null){const j=0.012*r.vnow;r.grp.position.set(TX(r.tank)+j*gauss(),BAR_DOWN+j*0.5*gauss(),j*gauss())}
+    r.ledMat.emissiveIntensity=seated?0.6+0.9*Math.min(1,r.vnow)*(0.5+0.5*Math.sin(clock*18)):0.15;
+    r.tag.quaternion.copy(camera.quaternion); r.tag.scale.setScalar(rsel===r.k?1.5:1);
+    vibUI(r,seated,g);
+    if(r.scale<1){r.scale=Math.min(1,r.scale+dt*2.5)} r.grp.scale.set(1,r.scale,1);
+    const c=PANEL_BASE.clone().lerp(CU,r.cu/3); if(r.sn)c.lerp(SN,0.85); r.pmat.color.lerp(c,Math.min(1,dt*3));
+  });
+  refreshUI(); controls.update(); renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
